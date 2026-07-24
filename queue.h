@@ -1,20 +1,20 @@
-#ifndef FILA_H
-#define FILA_H
+#ifndef QUEUE_H
+#define QUEUE_H
 
 #include "pcb.h"
 
-#define MAX_FILA 100
+#define MAX_QUEUE 100
 
 typedef struct {
-    PCB* itens[MAX_FILA];
-    int inicio;
-    int fim;
-    int tamanho;
-} Fila;
+    PCB* items[MAX_QUEUE];
+    int start;
+    int end;
+    int size;
+} Queue;
 
-void fila_init(Fila* f);
-int  fila_vazia(Fila* f);
-void enfileirar(Fila* f, PCB* p);
-PCB* desenfileirar(Fila* f);
+void queue_init(Queue* q);
+int  queue_empty(Queue* q);
+void enqueue(Queue* q, PCB* p);
+PCB* dequeue(Queue* q);
 
 #endif
