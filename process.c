@@ -1,42 +1,42 @@
-#include "processo.h"
+#include "process.h"
 #include "config.h"
 #include <stdlib.h>
 
-PCB* criar_processo(int pid, int ppid, int instante_chegada) {
+PCB* create_process(int pid, int ppid, int arrival_time) {
     PCB* p = malloc(sizeof(PCB));
 
     p->pid = pid;
     p->ppid = ppid;
-    p->prioridade = 0; // Todo processo novo entra na prioridade alta
-    p->status = PRONTO;
+    p->priority = 0; // Every new process enters at high priority
+    p->status = READY;
 
-    p->tempo_servico = SERVICO_MIN + rand() % (SERVICO_MAX - SERVICO_MIN + 1);
-    p->tempo_executado = 0;
+    p->service_time = SERVICE_MIN + rand() % (SERVICE_MAX - SERVICE_MIN + 1);
+    p->time_executed = 0;
 
-    p->instante_chegada = instante_chegada;
-    p->chegou = 0; // Ainda nao entrou no sistema
+    p->arrival_time = arrival_time;
+    p->arrived = 0; // Not yet entered the system
 
-    // Decide se esse processo vai fazer I/O
-    if (rand() % 100 < CHANCE_IO) {
-        // Sorteia o tipo de I/O (1 = disco, 2 = fita, 3 = impressora)
-        p->tipo_io = (TipoIO)(1 + rand() % 3);
-        // Define após quantos ticks de CPU ele pede o I/O
-        p->instante_io = 1 + rand() % p->tempo_servico;
+    // Decide whether this process will perform I/O
+    if (rand() % 100 < IO_CHANCE) {
+        // Randomly pick the I/O type (1 = disk, 2 = tape, 3 = printer)
+        p->io_type = (IOType)(1 + rand() % 3);
+        // Define after how many CPU ticks it requests I/O
+        p->io_instant = 1 + rand() % p->service_time;
     } else {
-        p->tipo_io = SEM_IO;
-        p->instante_io = -1;        // Nunca pede
+        p->io_type = NO_IO;
+        p->io_instant = -1;        // Never requests I/O
     }
 
-    p->tempo_restante_io = 0;
+    p->remaining_io_time = 0;
 
     return p;
 }
 
-const char* nome_io(TipoIO tipo) {
-    switch (tipo) {
-        case DISCO:      return "Disco";
-        case FITA:       return "Fita";
-        case IMPRESSORA: return "Impressora";
-        default:         return "Nenhum";
+const char* io_name(IOType type) {
+    switch (type) {
+        case DISK:      return "Disk";
+        case TAPE:       return "Tape";
+        case PRINTER: return "Printer";
+        default:         return "None";
     }
 }
