@@ -1,21 +1,21 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Premissas do simulador
+// Simulator assumptions
 
-#define MAX_PROCESSOS   5   // Limite maximo de processos criados
-#define QUANTUM         3    // Fatia de tempo, em ticks
+#define MAX_PROCESSES   5   // Maximum number of processes created
+#define QUANTUM         3   // Time slice, in ticks
 
-// Faixa do tempo de servico (CPU) de cada processo
-#define SERVICO_MIN     2
-#define SERVICO_MAX     10
+// Range of service (CPU) time for each process
+#define SERVICE_MIN     2
+#define SERVICE_MAX     10
 
-// Duracao de cada tipo de I/O, em ticks
-#define DURACAO_DISCO       4
-#define DURACAO_FITA        3
-#define DURACAO_IMPRESSORA  5
+// Duration of each I/O type, in ticks
+#define DISK_DURATION       4
+#define TAPE_DURATION       3
+#define PRINTER_DURATION    5
 
-// Probabilidade de um processo solicitar I/O
-#define CHANCE_IO       60
+// Probability of a process requesting I/O
+#define IO_CHANCE       60
 
 #endif
