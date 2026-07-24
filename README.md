@@ -1,5 +1,7 @@
 # Process Scheduler — Round Robin with Feedback
 
+*This project was originally written entirely in Portuguese and translated to English after the course ended.*
+
 Process scheduling simulator written in **C**, implementing the **Round Robin
 (Circular) with Feedback** selection strategy.
 
