@@ -2,38 +2,38 @@
 #include <stdlib.h>
 #include <time.h>
 #include "config.h"
-#include "processo.h"
-#include "escalonador.h"
+#include "process.h"
+#include "scheduler.h"
 
 int main() {
     srand(time(NULL));
 
-    int n = MAX_PROCESSOS;
-    PCB* todos[MAX_PROCESSOS];
+    int n = MAX_PROCESSES;
+    PCB* all[MAX_PROCESSES];
 
-    // Cria os processos com chegadas espalhadas no tempo
-    int chegada = 0;
+    // Creates the processes with arrival times spread out over time
+    int arrival = 0;
     for (int i = 0; i < n; i++) {
-        todos[i] = criar_processo(i + 1, 1, chegada);
-        chegada += rand() % 4;   // Proximo chega de 0 a 3 ticks depois
+        all[i] = create_process(i + 1, 1, arrival);
+        arrival += rand() % 4;   // Next one arrives 0 to 3 ticks later
     }
 
-    // Mostra a tabela de processos antes de simular
-    printf("===== PROCESSOS CRIADOS =====\n");
+    // Shows the process table before simulating
+    printf("===== PROCESSES CREATED =====\n");
     for (int i = 0; i < n; i++) {
-        printf("PID %d | chegada=%d | servico=%d | io=%s | pede_io_apos=%d\n",
-               todos[i]->pid, todos[i]->instante_chegada,
-               todos[i]->tempo_servico, nome_io(todos[i]->tipo_io),
-               todos[i]->instante_io);
+        printf("PID %d | arrival=%d | service=%d | io=%s | requests_io_after=%d\n",
+               all[i]->pid, all[i]->arrival_time,
+               all[i]->service_time, io_name(all[i]->io_type),
+               all[i]->io_instant);
     }
 
-    // Inicializa e roda uma vez
-    Escalonador e;
-    escalonador_init(&e, n);
-    simular(&e, todos, n);
+    // Initializes and runs once
+    Scheduler s;
+    scheduler_init(&s, n);
+    simulate(&s, all, n);
 
-    // Libera memoria
-    for (int i = 0; i < n; i++) free(todos[i]);
+    // Frees memory
+    for (int i = 0; i < n; i++) free(all[i]);
 
     return 0;
 }
