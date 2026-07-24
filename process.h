@@ -1,12 +1,12 @@
-#ifndef PROCESSO_H
-#define PROCESSO_H
+#ifndef PROCESS_H
+#define PROCESS_H
 
 #include "pcb.h"
 
-// Cria e preenche um PCB com valores (parcialmente aleatorios)
-PCB* criar_processo(int pid, int ppid, int instante_chegada);
+// Creates and fills a PCB with (partially randomized) values
+PCB* create_process(int pid, int ppid, int arrival_time);
 
-// Nome legivel do tipo de I/O (para os logs)
-const char* nome_io(TipoIO tipo);
+// Human-readable name of the I/O type (for the logs)
+const char* io_name(IOType type);
 
 #endif
