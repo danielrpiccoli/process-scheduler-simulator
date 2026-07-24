@@ -1,126 +1,142 @@
-# Escalonador de Processos — Round Robin com Feedback
+# Process Scheduler — Round Robin with Feedback
 
-Simulador de escalonamento de processos escrito em **C**, implementando a estratégia de seleção **Round Robin (Circular) com Feedback**.
+Process scheduling simulator written in **C**, implementing the **Round Robin
+(Circular) with Feedback** selection strategy.
 
-Trabalho 2 da disciplina **ICP246 — Arquitetura de Computadores e Sistemas Operacionais** (UFRJ — Instituto de Computação, 2026-1).
-
----
-
-## Visão geral
-
-O simulador modela a gerência de processos de curto prazo de um sistema operacional. A cada *tick* do relógio, ele cria processos, disputa a CPU entre eles respeitando uma fatia de tempo (quantum), aplica preempção, bloqueia processos que solicitam I/O e os devolve às filas de prontos conforme o tipo de dispositivo utilizado.
-
-A estratégia reproduz, em forma simplificada, o escalonamento do **UNIX tradicional**: Feedback com múltiplas filas de prioridade e Round Robin internamente em cada fila.
-
-### Principais características
-
-- **PCB (Process Control Block)** com identificação (PID, PPID), estado e atributos de escalonamento.
-- **Cinco filas:** duas de prontos (alta e baixa prioridade) e três de I/O (disco, fita e impressora).
-- **Preempção por quantum:** processos que esgotam a fatia sem terminar são rebaixados para a fila de baixa prioridade.
-- **Feedback por tipo de I/O:**
-  - Disco → retorna à fila de **baixa** prioridade
-  - Fita magnética → retorna à fila de **alta** prioridade
-  - Impressora → retorna à fila de **alta** prioridade
-- **Tempos aleatórios** de serviço e de I/O para cada processo.
-- **Log detalhado** de cada evento (criação, entrada na CPU, preempção, bloqueio, retorno de I/O e término).
+Final project for the course **ICP246 — Computer Architecture and Operating
+Systems** (UFRJ — Instituto de Computação, 2026-1).
 
 ---
 
-## Estrutura do projeto
+## Overview
 
-| Arquivo | Responsabilidade |
+The simulator models the short-term process management of an operating system.
+At each clock *tick*, it creates processes, has them compete for the CPU while
+respecting a time slice (quantum), applies preemption, blocks processes that
+request I/O, and returns them to the ready queues according to the type of
+device used.
+
+The strategy reproduces, in simplified form, the scheduling of **traditional
+UNIX**: Feedback with multiple priority queues and Round Robin internally within
+each queue.
+
+### Key features
+
+- **PCB (Process Control Block)** with identification (PID, PPID), state, and
+  scheduling attributes.
+- **Five queues:** two ready queues (high and low priority) and three I/O
+  queues (disk, tape, and printer).
+- **Quantum-based preemption:** processes that exhaust their time slice without
+  finishing are demoted to the low-priority queue.
+- **Feedback by I/O type:**
+  - Disk → returns to the **low**-priority queue
+  - Magnetic tape → returns to the **high**-priority queue
+  - Printer → returns to the **high**-priority queue
+- **Random service and I/O times** for each process.
+- **Detailed log** of every event (creation, entering the CPU, preemption,
+  blocking, I/O return, and termination).
+
+---
+
+## Project structure
+
+| File | Responsibility |
 |---|---|
-| `config.h` | Premissas e parâmetros numéricos da simulação |
-| `pcb.h` | Estrutura do PCB e enumerações de estado e tipo de I/O |
-| `fila.h` / `fila.c` | Estrutura genérica de fila circular (FIFO) |
-| `processo.h` / `processo.c` | Criação de processos com atributos aleatórios |
-| `escalonador.h` / `escalonador.c` | Núcleo: laço de simulação Round Robin com Feedback |
-| `main.c` | Montagem dos processos e disparo da simulação |
+| `config.h` | Simulation assumptions and numeric parameters |
+| `pcb.h` | PCB structure and state/I/O-type enumerations |
+| `queue.h` / `queue.c` | Generic circular queue (FIFO) structure |
+| `process.h` / `process.c` | Process creation with randomized attributes |
+| `scheduler.h` / `scheduler.c` | Core: Round Robin with Feedback simulation loop |
+| `main.c` | Process setup and simulation launch |
 
 ---
 
-## Como compilar e executar
+## How to build and run
 
-O projeto depende apenas de um compilador C padrão (GCC ou Clang) e da biblioteca padrão da linguagem. Não há dependências externas.
+The project depends only on a standard C compiler (GCC or Clang) and the
+language's standard library. There are no external dependencies.
 
 ### Linux / macOS
 
 ```bash
-gcc -Wall main.c fila.c processo.c escalonador.c -o escalonador
-./escalonador
+gcc -Wall main.c queue.c process.c scheduler.c -o scheduler
+./scheduler
 ```
 
-Com Clang, basta trocar `gcc` por `clang`.
+With Clang, just swap `gcc` for `clang`.
 
 ### Windows
 
-Com o **MinGW** (GCC para Windows):
+With **MinGW** (GCC for Windows):
 
 ```bash
-gcc -Wall main.c fila.c processo.c escalonador.c -o escalonador.exe
-escalonador.exe
+gcc -Wall main.c queue.c process.c scheduler.c -o scheduler.exe
+scheduler.exe
 ```
 
-Com o compilador da **Microsoft (MSVC)**, em um *Developer Command Prompt*:
+With the **Microsoft compiler (MSVC)**, in a *Developer Command Prompt*:
 
 ```bash
-cl main.c fila.c processo.c escalonador.c /Fe:escalonador.exe
-escalonador.exe
+cl main.c queue.c process.c scheduler.c /Fe:scheduler.exe
+scheduler.exe
 ```
 
-> A cada execução os tempos de serviço e de I/O são sorteados novamente (o gerador é semeado com `srand(time(NULL))`), de modo que a saída varia entre execuções.
+> Service and I/O times are randomized on every run (the generator is seeded
+> with `srand(time(NULL))`), so the output varies between executions.
 
 ---
 
-## Ajustando as premissas
+## Adjusting the assumptions
 
-Todos os parâmetros da simulação estão centralizados em `config.h` e podem ser alterados antes de compilar:
+All simulation parameters are centralized in `config.h` and can be changed
+before compiling:
 
 ```c
-#define MAX_PROCESSOS   10   /* limite maximo de processos criados */
-#define QUANTUM         3    /* fatia de tempo, em ticks           */
+#define MAX_PROCESSES   10   /* maximum number of processes created  */
+#define QUANTUM         3    /* time slice, in ticks                 */
 
-#define SERVICO_MIN     5    /* tempo de servico minimo            */
-#define SERVICO_MAX     20   /* tempo de servico maximo            */
+#define SERVICE_MIN     5    /* minimum service time                 */
+#define SERVICE_MAX     20   /* maximum service time                 */
 
-#define DURACAO_DISCO       4
-#define DURACAO_FITA        3
-#define DURACAO_IMPRESSORA  5
+#define DISK_DURATION       4
+#define TAPE_DURATION       3
+#define PRINTER_DURATION    5
 
-#define CHANCE_IO       60   /* probabilidade (%) de solicitar I/O */
+#define IO_CHANCE       60   /* probability (%) of requesting I/O    */
 ```
 
-Por exemplo, aumentar o `QUANTUM` aproxima o comportamento do FCFS; reduzi-lo aumenta a frequência de preempções.
+For example, increasing `QUANTUM` makes the behavior approach FCFS; decreasing
+it increases the frequency of preemptions.
 
 ---
 
-## Exemplo de saída
+## Sample output
 
 ```
-===== PROCESSOS CRIADOS =====
-PID 1 | chegada=0 | servico=6 | io=Fita | pede_io_apos=3
-PID 2 | chegada=3 | servico=19 | io=Fita | pede_io_apos=17
+===== PROCESSES CREATED =====
+PID 1 | arrival=0 | service=6 | io=Tape | requests_io_after=3
+PID 2 | arrival=3 | service=19 | io=Tape | requests_io_after=17
 ...
 
-===== INICIO DA SIMULACAO =====
+===== SIMULATION START =====
 
-[clock  0] PID 1 criado -> fila ALTA
-[clock  0] PID 1 entra na CPU (servico 0/6)
-[clock  3] PID 1 -> I/O (Fita)
-[clock  3] PID 2 entra na CPU (servico 0/19)
-[clock  6] PID 2 sofreu PREEMPCAO -> fila BAIXA
+[clock  0] PID 1 created -> HIGH queue
+[clock  0] PID 1 enters CPU (service 0/6)
+[clock  3] PID 1 -> I/O (Tape)
+[clock  3] PID 2 enters CPU (service 0/19)
+[clock  6] PID 2 was PREEMPTED -> LOW queue
 ...
-[clock  9] PID 1 <- I/O concluido, vai p/ ALTA
+[clock  9] PID 1 <- I/O completed, goes to HIGH
 ...
 
-===== FIM DA SIMULACAO (clock final: NN) =====
+===== SIMULATION END (final clock: NN) =====
 ```
 
-Cada linha registra o instante do relógio e o evento de escalonamento correspondente.
+Each line records the clock instant and the corresponding scheduling event.
 
 ---
 
-## Referências
+## References
 
 - BASTOS, Valeria M. *Sistemas Operacionais I — Unidade II: Processos.* UFRJ/IM/DCC.
 - BASTOS, Valeria M. *Sistemas Operacionais I — Unidade III: Escalonamento de Processos.* UFRJ/IM/DCC.
