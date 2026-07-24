@@ -1,37 +1,37 @@
 #ifndef PCB_H
 #define PCB_H
 
-// Estados possiveis de um processo
+// Possible states of a process
 typedef enum {
-    PRONTO,
-    EXECUTANDO,
-    BLOQUEADO,
-    TERMINADO
+    READY,
+    RUNNING,
+    BLOCKED,
+    TERMINATED
 } Status;
 
-// Tipos de I/O
+// I/O types
 typedef enum {
-    SEM_IO,
-    DISCO,
-    FITA,
-    IMPRESSORA
-} TipoIO;
+    NO_IO,
+    DISK,
+    TAPE,
+    PRINTER
+} IOType;
 
 typedef struct {
     int pid;
     int ppid;
-    int prioridade; // 0 = alta, 1 = baixa
+    int priority; // 0 = high, 1 = low
     Status status;
 
-    int tempo_servico; // Total de CPU que o processo precisa
-    int tempo_executado; // Quanto de CPU ja consumiu
+    int service_time;   // Total CPU time the process needs
+    int time_executed;  // How much CPU it has already consumed
 
-    int instante_chegada;  // Tick em que o processo entra no sistema
-    int chegou; // 0 = ainda nao entrou, 1 = ja criado
+    int arrival_time;  // Tick at which the process enters the system
+    int arrived;       // 0 = not yet entered, 1 = already created
 
-    TipoIO tipo_io; // Tipo de I/O que ele vai solicitar
-    int instante_io; // Depois de quantos ticks de CPU ele pede I/O
-    int tempo_restante_io; // Contador regressivo durante o bloqueio
+    IOType io_type;          // Type of I/O it will request
+    int io_instant;          // After how many CPU ticks it requests I/O
+    int remaining_io_time;   // Countdown while blocked
 } PCB;
 
 #endif
