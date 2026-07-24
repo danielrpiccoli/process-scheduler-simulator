@@ -1,30 +1,30 @@
-#include "fila.h"
+#include "queue.h"
 #include <stdio.h>
 
-void fila_init(Fila* f) {
-    f->inicio = 0;
-    f->fim = 0;
-    f->tamanho = 0;
+void queue_init(Queue* q) {
+    q->start = 0;
+    q->end = 0;
+    q->size = 0;
 }
 
-int fila_vazia(Fila* f) {
-    return f->tamanho == 0;
+int queue_empty(Queue* q) {
+    return q->size == 0;
 }
 
-void enfileirar(Fila* f, PCB* p) {
-    if (f->tamanho == MAX_FILA) {
-        printf("ERRO: fila cheia\n");
+void enqueue(Queue* q, PCB* p) {
+    if (q->size == MAX_QUEUE) {
+        printf("ERROR: queue full\n");
         return;
     }
-    f->itens[f->fim] = p;
-    f->fim = (f->fim + 1) % MAX_FILA;
-    f->tamanho++;
+    q->items[q->end] = p;
+    q->end = (q->end + 1) % MAX_QUEUE;
+    q->size++;
 }
 
-PCB* desenfileirar(Fila* f) {
-    if (fila_vazia(f)) return NULL;
-    PCB* p = f->itens[f->inicio];
-    f->inicio = (f->inicio + 1) % MAX_FILA;
-    f->tamanho--;
+PCB* dequeue(Queue* q) {
+    if (queue_empty(q)) return NULL;
+    PCB* p = q->items[q->start];
+    q->start = (q->start + 1) % MAX_QUEUE;
+    q->size--;
     return p;
 }
