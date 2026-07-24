@@ -3,10 +3,10 @@
 
 #include "pcb.h"
 
-/* Cria e preenche um PCB com valores (parcialmente aleatorios) */
+// Cria e preenche um PCB com valores (parcialmente aleatorios)
 PCB* criar_processo(int pid, int ppid, int instante_chegada);
 
-/* Nome legivel do tipo de I/O (para os logs) */
+// Nome legivel do tipo de I/O (para os logs)
 const char* nome_io(TipoIO tipo);
 
 #endif

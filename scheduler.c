@@ -14,9 +14,9 @@ void escalonador_init(Escalonador* e, int total_processos) {
     e->total_processos = total_processos;
 }
 
-/* ===== Funcoes auxiliares (static = visiveis so neste arquivo) ===== */
+// Funcoes auxiliares (static = visiveis só nesse arquivo)
 
-/* Coloca um processo na fila de I/O certa e inicia o contador de duracao */
+// Coloca um processo na fila de I/O certa e inicia o contador de duração
 static void enviar_para_io(Escalonador* e, PCB* p) {
     p->status = BLOQUEADO;
     switch (p->tipo_io) {
@@ -39,9 +39,9 @@ static void enviar_para_io(Escalonador* e, PCB* p) {
            e->clock, p->pid, nome_io(p->tipo_io));
 }
 
-/* Decrementa o I/O de uma fila; quem termina volta para a fila de prontos.
-   destino_alta = 1 -> volta p/ ALTA (fita, impressora)
-   destino_alta = 0 -> volta p/ BAIXA (disco)                            */
+/* Decrementa o I/O de uma fila. Quem termina volta para a fila de prontos.
+   destino_alta = 1 -> volta para ALTA
+   destino_alta = 0 -> volta para BAIXA */
 static void atualizar_fila_io(Escalonador* e, Fila* fila_io, int destino_alta) {
     int n = fila_io->tamanho;
     for (int i = 0; i < n; i++) {
@@ -49,7 +49,7 @@ static void atualizar_fila_io(Escalonador* e, Fila* fila_io, int destino_alta) {
         p->tempo_restante_io--;
 
         if (p->tempo_restante_io <= 0) {
-            /* I/O concluido: esse processo nao pede I/O de novo */
+            // I/O concluido. Esse processo nao pede I/O de novo
             p->tipo_io = SEM_IO;
             p->instante_io = -1;
             p->status = PRONTO;
@@ -64,13 +64,13 @@ static void atualizar_fila_io(Escalonador* e, Fila* fila_io, int destino_alta) {
                        e->clock, p->pid);
             }
         } else {
-            /* ainda nao terminou, devolve para a mesma fila */
+            // Ainda nao terminou, devolve para a mesma fila
             enfileirar(fila_io, p);
         }
     }
 }
 
-/* Pega o proximo processo a executar: alta tem prioridade sobre baixa */
+// Pega o próximo processo a executar. Alta tem prioridade sobre baixa
 static PCB* selecionar_processo(Escalonador* e) {
     if (!fila_vazia(&e->alta))  return desenfileirar(&e->alta);
     if (!fila_vazia(&e->baixa)) return desenfileirar(&e->baixa);
@@ -82,9 +82,9 @@ void simular(Escalonador* e, PCB* todos[], int n) {
 
     while (e->processos_terminados < e->total_processos) {
 
-        /* 1. CHEGADA: processo entra assim que o clock alcanca sua chegada.
+        /* 1. Chegada: processo entra assim que o clock alcança sua chegada.
            Usa flag 'chegou' + '<=' para nunca pular um processo cuja
-           chegada caia num tick que o clock "saltou" por causa do quantum. */
+           chegada caia num tick que o clock pulou por causa do quantum. */
         for (int i = 0; i < n; i++) {
             if (!todos[i]->chegou && todos[i]->instante_chegada <= e->clock) {
                 todos[i]->chegou = 1;
@@ -94,21 +94,21 @@ void simular(Escalonador* e, PCB* todos[], int n) {
             }
         }
 
-        /* 2. ATUALIZA I/O (disco volta p/ baixa; fita e impressora p/ alta) */
-        atualizar_fila_io(e, &e->io_disco, 0);       /* 0 = baixa */
-        atualizar_fila_io(e, &e->io_fita, 1);        /* 1 = alta  */
-        atualizar_fila_io(e, &e->io_impressora, 1);  /* 1 = alta  */
+        // 2. Ataualiza I/O (disco volta para baixa. Fita e impressora para alta)
+        atualizar_fila_io(e, &e->io_disco, 0);       // 0 = baixa
+        atualizar_fila_io(e, &e->io_fita, 1);        // 1 = alta
+        atualizar_fila_io(e, &e->io_impressora, 1);  // 1 = alta
 
-        /* 3. SELECIONA processo para a CPU */
+        // 3. Seleciona processo para a CPU
         PCB* atual = selecionar_processo(e);
 
         if (atual == NULL) {
-            /* CPU ociosa: ninguem pronto, mas ainda ha gente em I/O */
+            // CPU ociosa: ninguem pronto, mas ainda tem gente em I/O
             e->clock++;
             continue;
         }
 
-        /* 4. EXECUTA respeitando o quantum */
+        // 4. Executa respeitando o quantum
         atual->status = EXECUTANDO;
         int quantum_usado = 0;
         printf("[clock %2d] PID %d entra na CPU (servico %d/%d)\n",
@@ -119,7 +119,7 @@ void simular(Escalonador* e, PCB* todos[], int n) {
             quantum_usado++;
             e->clock++;
 
-            /* 5a. TERMINOU o servico? */
+            // 5a. Terminou o serviço?
             if (atual->tempo_executado >= atual->tempo_servico) {
                 atual->status = TERMINADO;
                 e->processos_terminados++;
@@ -128,7 +128,7 @@ void simular(Escalonador* e, PCB* todos[], int n) {
                 break;
             }
 
-            /* 5b. Chegou a hora de pedir I/O? */
+            // 5b. Chegou a hora de pedir I/O?
             if (atual->tipo_io != SEM_IO &&
                 atual->tempo_executado == atual->instante_io) {
                 enviar_para_io(e, atual);
@@ -137,7 +137,7 @@ void simular(Escalonador* e, PCB* todos[], int n) {
             }
         }
 
-        /* 5c. Estourou o quantum sem terminar nem pedir I/O -> PREEMPCAO */
+        // 5c. Estourou o quantum sem terminar nem pedir I/O -> Preempção
         if (atual != NULL) {
             atual->status = PRONTO;
             enfileirar(&e->baixa, atual);

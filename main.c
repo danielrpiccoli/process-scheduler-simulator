@@ -11,14 +11,14 @@ int main() {
     int n = MAX_PROCESSOS;
     PCB* todos[MAX_PROCESSOS];
 
-    /* Cria os processos com chegadas espalhadas no tempo */
+    // Cria os processos com chegadas espalhadas no tempo
     int chegada = 0;
     for (int i = 0; i < n; i++) {
         todos[i] = criar_processo(i + 1, 1, chegada);
-        chegada += rand() % 4;   /* proximo chega de 0 a 3 ticks depois */
+        chegada += rand() % 4;   // Proximo chega de 0 a 3 ticks depois
     }
 
-    /* Mostra a tabela de processos antes de simular */
+    // Mostra a tabela de processos antes de simular
     printf("===== PROCESSOS CRIADOS =====\n");
     for (int i = 0; i < n; i++) {
         printf("PID %d | chegada=%d | servico=%d | io=%s | pede_io_apos=%d\n",
@@ -27,12 +27,12 @@ int main() {
                todos[i]->instante_io);
     }
 
-    /* Inicializa e roda UMA vez */
+    // Inicializa e roda uma vez
     Escalonador e;
     escalonador_init(&e, n);
     simular(&e, todos, n);
 
-    /* Libera memoria */
+    // Libera memoria
     for (int i = 0; i < n; i++) free(todos[i]);
 
     return 0;
