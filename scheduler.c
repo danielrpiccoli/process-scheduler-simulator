@@ -1,150 +1,150 @@
-#include "escalonador.h"
+#include "scheduler.h"
 #include "config.h"
-#include "processo.h"
+#include "process.h"
 #include <stdio.h>
 
-void escalonador_init(Escalonador* e, int total_processos) {
-    fila_init(&e->alta);
-    fila_init(&e->baixa);
-    fila_init(&e->io_disco);
-    fila_init(&e->io_fita);
-    fila_init(&e->io_impressora);
-    e->clock = 0;
-    e->processos_terminados = 0;
-    e->total_processos = total_processos;
+void scheduler_init(Scheduler* s, int total_processes) {
+    queue_init(&s->high);
+    queue_init(&s->low);
+    queue_init(&s->io_disk);
+    queue_init(&s->io_tape);
+    queue_init(&s->io_printer);
+    s->clock = 0;
+    s->finished_processes = 0;
+    s->total_processes = total_processes;
 }
 
-// Funcoes auxiliares (static = visiveis só nesse arquivo)
+// Helper functions (static = visible only in this file)
 
-// Coloca um processo na fila de I/O certa e inicia o contador de duração
-static void enviar_para_io(Escalonador* e, PCB* p) {
-    p->status = BLOQUEADO;
-    switch (p->tipo_io) {
-        case DISCO:
-            p->tempo_restante_io = DURACAO_DISCO;
-            enfileirar(&e->io_disco, p);
+// Places a process in the correct I/O queue and starts its duration counter
+static void send_to_io(Scheduler* s, PCB* p) {
+    p->status = BLOCKED;
+    switch (p->io_type) {
+        case DISK:
+            p->remaining_io_time = DISK_DURATION;
+            enqueue(&s->io_disk, p);
             break;
-        case FITA:
-            p->tempo_restante_io = DURACAO_FITA;
-            enfileirar(&e->io_fita, p);
+        case TAPE:
+            p->remaining_io_time = TAPE_DURATION;
+            enqueue(&s->io_tape, p);
             break;
-        case IMPRESSORA:
-            p->tempo_restante_io = DURACAO_IMPRESSORA;
-            enfileirar(&e->io_impressora, p);
+        case PRINTER:
+            p->remaining_io_time = PRINTER_DURATION;
+            enqueue(&s->io_printer, p);
             break;
         default:
             break;
     }
     printf("[clock %2d] PID %d -> I/O (%s)\n",
-           e->clock, p->pid, nome_io(p->tipo_io));
+           s->clock, p->pid, io_name(p->io_type));
 }
 
-/* Decrementa o I/O de uma fila. Quem termina volta para a fila de prontos.
-   destino_alta = 1 -> volta para ALTA
-   destino_alta = 0 -> volta para BAIXA */
-static void atualizar_fila_io(Escalonador* e, Fila* fila_io, int destino_alta) {
-    int n = fila_io->tamanho;
+/* Decrements the I/O time for a queue. Whoever finishes goes back to a ready queue.
+   to_high = 1 -> goes back to HIGH
+   to_high = 0 -> goes back to LOW */
+static void update_io_queue(Scheduler* s, Queue* io_queue, int to_high) {
+    int n = io_queue->size;
     for (int i = 0; i < n; i++) {
-        PCB* p = desenfileirar(fila_io);
-        p->tempo_restante_io--;
+        PCB* p = dequeue(io_queue);
+        p->remaining_io_time--;
 
-        if (p->tempo_restante_io <= 0) {
-            // I/O concluido. Esse processo nao pede I/O de novo
-            p->tipo_io = SEM_IO;
-            p->instante_io = -1;
-            p->status = PRONTO;
+        if (p->remaining_io_time <= 0) {
+            // I/O completed. This process won't request I/O again
+            p->io_type = NO_IO;
+            p->io_instant = -1;
+            p->status = READY;
 
-            if (destino_alta) {
-                enfileirar(&e->alta, p);
-                printf("[clock %2d] PID %d <- I/O concluido, vai p/ ALTA\n",
-                       e->clock, p->pid);
+            if (to_high) {
+                enqueue(&s->high, p);
+                printf("[clock %2d] PID %d <- I/O complete, goes to HIGH\n",
+                       s->clock, p->pid);
             } else {
-                enfileirar(&e->baixa, p);
-                printf("[clock %2d] PID %d <- I/O concluido, vai p/ BAIXA\n",
-                       e->clock, p->pid);
+                enqueue(&s->low, p);
+                printf("[clock %2d] PID %d <- I/O complete, goes to LOW\n",
+                       s->clock, p->pid);
             }
         } else {
-            // Ainda nao terminou, devolve para a mesma fila
-            enfileirar(fila_io, p);
+            // Not finished yet, put it back in the same queue
+            enqueue(io_queue, p);
         }
     }
 }
 
-// Pega o próximo processo a executar. Alta tem prioridade sobre baixa
-static PCB* selecionar_processo(Escalonador* e) {
-    if (!fila_vazia(&e->alta))  return desenfileirar(&e->alta);
-    if (!fila_vazia(&e->baixa)) return desenfileirar(&e->baixa);
+// Picks the next process to run. High has priority over low
+static PCB* select_process(Scheduler* s) {
+    if (!queue_empty(&s->high)) return dequeue(&s->high);
+    if (!queue_empty(&s->low))  return dequeue(&s->low);
     return NULL;
 }
 
-void simular(Escalonador* e, PCB* todos[], int n) {
-    printf("\n===== INICIO DA SIMULACAO =====\n\n");
+void simulate(Scheduler* s, PCB* all[], int n) {
+    printf("\n===== SIMULATION START =====\n\n");
 
-    while (e->processos_terminados < e->total_processos) {
+    while (s->finished_processes < s->total_processes) {
 
-        /* 1. Chegada: processo entra assim que o clock alcança sua chegada.
-           Usa flag 'chegou' + '<=' para nunca pular um processo cuja
-           chegada caia num tick que o clock pulou por causa do quantum. */
+        /* 1. Arrival: a process enters as soon as the clock reaches its arrival time.
+           Uses the 'arrived' flag + '<=' to never skip a process whose
+           arrival falls on a tick that the clock skipped because of the quantum. */
         for (int i = 0; i < n; i++) {
-            if (!todos[i]->chegou && todos[i]->instante_chegada <= e->clock) {
-                todos[i]->chegou = 1;
-                enfileirar(&e->alta, todos[i]);
-                printf("[clock %2d] PID %d criado -> fila ALTA\n",
-                       e->clock, todos[i]->pid);
+            if (!all[i]->arrived && all[i]->arrival_time <= s->clock) {
+                all[i]->arrived = 1;
+                enqueue(&s->high, all[i]);
+                printf("[clock %2d] PID %d created -> HIGH queue\n",
+                       s->clock, all[i]->pid);
             }
         }
 
-        // 2. Ataualiza I/O (disco volta para baixa. Fita e impressora para alta)
-        atualizar_fila_io(e, &e->io_disco, 0);       // 0 = baixa
-        atualizar_fila_io(e, &e->io_fita, 1);        // 1 = alta
-        atualizar_fila_io(e, &e->io_impressora, 1);  // 1 = alta
+        // 2. Update I/O (disk goes back to low. Tape and printer go back to high)
+        update_io_queue(s, &s->io_disk, 0);    // 0 = low
+        update_io_queue(s, &s->io_tape, 1);    // 1 = high
+        update_io_queue(s, &s->io_printer, 1); // 1 = high
 
-        // 3. Seleciona processo para a CPU
-        PCB* atual = selecionar_processo(e);
+        // 3. Selects the process for the CPU
+        PCB* current = select_process(s);
 
-        if (atual == NULL) {
-            // CPU ociosa: ninguem pronto, mas ainda tem gente em I/O
-            e->clock++;
+        if (current == NULL) {
+            // CPU idle: no one ready, but someone is still in I/O
+            s->clock++;
             continue;
         }
 
-        // 4. Executa respeitando o quantum
-        atual->status = EXECUTANDO;
-        int quantum_usado = 0;
-        printf("[clock %2d] PID %d entra na CPU (servico %d/%d)\n",
-               e->clock, atual->pid, atual->tempo_executado, atual->tempo_servico);
+        // 4. Runs it respecting the quantum
+        current->status = RUNNING;
+        int quantum_used = 0;
+        printf("[clock %2d] PID %d enters CPU (service %d/%d)\n",
+               s->clock, current->pid, current->time_executed, current->service_time);
 
-        while (quantum_usado < QUANTUM) {
-            atual->tempo_executado++;
-            quantum_usado++;
-            e->clock++;
+        while (quantum_used < QUANTUM) {
+            current->time_executed++;
+            quantum_used++;
+            s->clock++;
 
-            // 5a. Terminou o serviço?
-            if (atual->tempo_executado >= atual->tempo_servico) {
-                atual->status = TERMINADO;
-                e->processos_terminados++;
-                printf("[clock %2d] PID %d TERMINOU\n", e->clock, atual->pid);
-                atual = NULL;
+            // 5a. Did it finish its service?
+            if (current->time_executed >= current->service_time) {
+                current->status = TERMINATED;
+                s->finished_processes++;
+                printf("[clock %2d] PID %d FINISHED\n", s->clock, current->pid);
+                current = NULL;
                 break;
             }
 
-            // 5b. Chegou a hora de pedir I/O?
-            if (atual->tipo_io != SEM_IO &&
-                atual->tempo_executado == atual->instante_io) {
-                enviar_para_io(e, atual);
-                atual = NULL;
+            // 5b. Time to request I/O?
+            if (current->io_type != NO_IO &&
+                current->time_executed == current->io_instant) {
+                send_to_io(s, current);
+                current = NULL;
                 break;
             }
         }
 
-        // 5c. Estourou o quantum sem terminar nem pedir I/O -> Preempção
-        if (atual != NULL) {
-            atual->status = PRONTO;
-            enfileirar(&e->baixa, atual);
-            printf("[clock %2d] PID %d sofreu PREEMPCAO -> fila BAIXA\n",
-                   e->clock, atual->pid);
+        // 5c. Quantum ran out without finishing or requesting I/O -> Preemption
+        if (current != NULL) {
+            current->status = READY;
+            enqueue(&s->low, current);
+            printf("[clock %2d] PID %d was PREEMPTED -> LOW queue\n",
+                   s->clock, current->pid);
         }
     }
 
-    printf("\n===== FIM DA SIMULACAO (clock final: %d) =====\n", e->clock);
+    printf("\n===== SIMULATION END (final clock: %d) =====\n", s->clock);
 }
