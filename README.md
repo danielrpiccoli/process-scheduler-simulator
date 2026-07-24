@@ -137,7 +137,6 @@ Each line records the clock instant and the corresponding scheduling event.
 ---
 
 ## References
-
 - BASTOS, Valeria M. *Sistemas Operacionais I — Unidade II: Processos.* UFRJ/IM/DCC.
 - BASTOS, Valeria M. *Sistemas Operacionais I — Unidade III: Escalonamento de Processos.* UFRJ/IM/DCC.
 - STALLINGS, William. *Operating Systems: Internals and Design Principles.* Pearson.
