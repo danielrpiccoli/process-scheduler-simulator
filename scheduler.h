@@ -1,22 +1,22 @@
-#ifndef ESCALONADOR_H
-#define ESCALONADOR_H
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
-#include "fila.h"
+#include "queue.h"
 
-// Agrupa todo o estado do sistema em uma struct
+// Groups the whole system state into a struct
 typedef struct {
-    Fila alta; // Fila de prontos - alta prioridade
-    Fila baixa; // Fila de prontos - baixa prioridade
-    Fila io_disco; // Bloqueados aguardando disco
-    Fila io_fita; // Bloqueados aguardando fita
-    Fila io_impressora; // Bloqueados aguardando impressora
+    Queue high; // Ready queue - high priority
+    Queue low;  // Ready queue - low priority
+    Queue io_disk;    // Blocked, waiting for disk
+    Queue io_tape;    // Blocked, waiting for tape
+    Queue io_printer; // Blocked, waiting for printer
 
-    int clock; // Tick atual
-    int processos_terminados;
-    int total_processos;
-} Escalonador;
+    int clock; // Current tick
+    int finished_processes;
+    int total_processes;
+} Scheduler;
 
-void escalonador_init(Escalonador* e, int total_processos);
-void simular(Escalonador* e, PCB* todos[], int n);
+void scheduler_init(Scheduler* s, int total_processes);
+void simulate(Scheduler* s, PCB* all[], int n);
 
 #endif
